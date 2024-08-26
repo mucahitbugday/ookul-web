@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body ng-app="myApp" ng-controller="MainCtrl">
+
+    <div ng-if="!isLogin" style="display: flex; justify-content: center; align-items: center; height: 90vh;">
+        <div class="card" style="min-width: 500px;">
+            <div class="card-body">
+                <form name="loginForm" ng-submit="login()">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Eposta</label>
+                        <input type="email" class="form-control" id="email" ng-model="user.Email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Şifre</label>
+                        <input type="password" class="form-control" id="password" ng-model="user.Password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Giriş Yap</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div ng-if="isLogin" style="display: flex; justify-content: center; align-items: center; height: 90vh;">
+        <div class="card" style="min-width: 500px;">
+            <div class="card-body">
+                <h3>Merhaba, {{userData.NameSurname}}</h3>
+                <img ng-src="{{userData.ImageUrl}}" alt="Avatar" class="img-fluid mb-3" style="max-width: 100px;">
+                <p>Hesabını silmek istediğin için üzgünüz.</p>
+                <p>Lütfen aşağıdaki alana "Onaylıyorum" yazın.</p>
+                <form name="deleteForm" ng-submit="deleteAccount()">
+                    <div class="mb-3">
+                        <input type="text" class="form-control" ng-model="user.ConfirmationMessage" placeholder="Onaylıyorum" required>
+                    </div>
+                    <button type="submit" class="btn btn-danger w-100">Hesabımı Sil</button>
+                </form>
+                <button class="btn btn-secondary w-100 mt-3" ng-click="logout()">Çıkış Yap</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+    <script>
+        var app = angular.module('myApp', []);
+
+        app.controller('MainCtrl', function ($scope, $http) {
+            const base_URL = 'http://api2.ookul.com.tr/api/';
+            $scope.isLogin = false;
+
+            $scope.user = { "Email": "", "Password": "", ConfirmationMessage: '' }
+
+             if (localStorage.getItem('token')) {
+                $scope.isLogin = true;
+                $scope.userData = JSON.parse(localStorage.getItem('userData'));
+            }
+
+            $scope.login = function () {
+                $http.post(base_URL + 'auth/login', $scope.user)
+                    .then((resp) => {
+                        if (resp.data.status === 200) {
+                            $scope.isLogin = true;
+                            $scope.userData = resp.data.User;
+                            localStorage.setItem('token', resp.data.token);
+                            localStorage.setItem('userData', JSON.stringify(resp.data.User));
+                        }
+                    })
+                    .catch((error) => {
+                        // console.error('Error during login:', error);
+                    });
+            };
+
+            $scope.deleteAccount = function () {
+                if ($scope.user.ConfirmationMessage === 'Onaylıyorum') {
+
+                    console.log("$scope.userData.UserID", $scope.userData.UserID)
+                    const token = localStorage.getItem('token');
+                    const config = {
+                        headers: { 'Authorization': `Bearer ${token}`, 'UserID': $scope.userData.UserID },
+                    };
+
+                    $http.delete(base_URL + 'user', config)
+                        .then((resp) => {
+                            if (resp.status === 200) {
+                                console.log('Account deleted:', resp.data);
+                                $scope.logout();
+                            }
+                        })
+                        .catch((error) => {
+                            console.error('Error during account deletion:', error);
+                        });
+                } else {
+                    alert('Lütfen doğru onay mesajını girin.');
+                }
+            };
+
+            $scope.logout = function () {
+                localStorage.removeItem('token');
+                localStorage.removeItem('userData');
+                $scope.isLogin = false;
+                $scope.user = {};
+                $scope.confirmationMessage = '';
+            };
+        });
+    </script>
+
+</body>
+
+</html>
