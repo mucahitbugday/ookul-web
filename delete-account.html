@@ -51,7 +51,7 @@
         var app = angular.module('myApp', []);
 
         app.controller('MainCtrl', function ($scope, $http) {
-            const base_URL = 'http://api2.ookul.com.tr/api/';
+            const base_URL = 'https://ookul-github.vercel.app/api/';
             $scope.isLogin = false;
 
             $scope.user = { "Email": "", "Password": "", ConfirmationMessage: '' }
